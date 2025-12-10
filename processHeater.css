@@ -1,0 +1,404 @@
+@font-face {
+  font-family: myFont;
+  src: url("/masks/bootstrap/fonts/Montserrat.ttf") format("truetype");
+}
+body, button, input, select, textarea, h1, h2, h3, h4, h5, h6 {
+  font-family: myFont, sans-serif;
+}
+
+:root {
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --ink: #111827;
+  --muted: #4b5563;
+  --accent: #2563eb;
+  --accent2: #b45309;
+  --grid: #e5e7eb;
+  --curve: #0ea5e9;
+  --above: #10b981;
+  --danger: #ef4444;
+  --border: #e5e7eb;
+  --shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+
+header { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+header h1 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: .3px; color: var(--ink); }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-left: auto; align-items: center; }
+.control { background: #f9fafb; border: 1px solid var(--border); padding: 8px 10px; border-radius: 12px; display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.control label { color: var(--ink); font-weight: 600; }
+input[type="range"] {
+  accent-color: black;
+  width: 200px;
+  height: 40px;
+  font-size: 1px;
+  font-weight: 500;
+  position: relative;
+}
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border: 1px solid;
+  accent-color: black;
+}
+
+.stat { display: grid; gap: 6px; margin: 6px 0; color: var(--muted); grid-template-rows: min-content min-content; }
+.stat b { color: var(--ink); height: min-content; grid-template-rows: min-content; }
+.stat span{font-size: 16;}
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;     /* füllt den Container */
+  background: #fff;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.page-layout {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Axes & grid */
+.grid line { stroke: var(--grid); stroke-width: 1; }
+.axis text { fill: #111827; font-size: 11.5px; }
+.axis path, .axis line { stroke: #0c0c0c; }
+
+/* Liquidus */
+.liquidus line { stroke: #f59e0b; stroke-dasharray: 6 6; stroke-width: 1.5; }
+.liquidus text { fill: var(--accent2); font-size: 12px; }
+
+/* Curve & area */
+.curve { fill: none; stroke: var(--curve); stroke-width: 2.5; }
+.above { fill: rgba(16,185,129,.12); stroke: none; }
+
+/* Zones: pale, opaque fills (no transparency blending) */
+.zones .zone-even rect { fill: #a8dadc; }  /* pale blue */
+.zones .zone-odd  rect { fill: #457b9d; }  /* pale orange */
+
+/* Ensure opaque paint & crisp rasterization for the big filled rects */
+.zones .zone rect { fill-opacity: 0.3; shape-rendering: crispEdges; }
+
+
+/* Points */
+.point { cursor: grab; }
+.point circle { fill: #ffffff; stroke: #2563eb; stroke-width: 2; }
+.point.locked circle { stroke: #f59e0b; }
+.point .ring { fill: none; stroke: rgba(0,0,0,.15); stroke-width: 6; opacity: 0; }
+.point:hover .ring { opacity: 1; }
+
+/* Crosshair */
+.crosshair line { stroke: #9ca3af; stroke-dasharray: 4 6; }
+
+/* Labels auf Punkten */
+.ptlabel {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink);
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+/* Punkt-Liste */
+.foot { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.pitem { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; padding: 10px 12px; background: #f9fafb; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 1px 0 rgba(0,0,0,.02) inset; }
+.pitem .pid { font-weight: 700; color: var(--ink); background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 2px 8px; }
+.pitem .pvals { font-size: 16px; color: var(--ink); }
+.pitem.locked { border-color: #f59e0b; background: #fff7ed; }
+
+#rampVal {
+  min-width: 65px;
+  display: inline-block;
+  text-align: left;
+}
+
+
+/* Scharfe Zonen-Grenzlinien (über den Bändern) */
+.zone-edges .edge {
+  stroke: black;         /* fast schwarz */
+  stroke-width: 1px;
+  opacity: 0.60;
+}
+
+/* Optional kleine Marker oben */
+.zone-edges .edge-cap {
+  fill: #111827;
+}
+
+/* Zone-Label in den Bändern etwas kräftiger */
+.zonelabel {
+  fill: #111827; font-size: 11.5px;
+}
+
+
+.zone-times text {
+  fill: #111827; font-size: 11.5px;
+}
+
+.zone-times .tick {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+/* Mittelwert-Linien pro Zone */
+.zone-avgs line.avg {
+  stroke: #111827;
+  stroke-width: 2px;
+  opacity: 0.9;
+}
+
+.zone-avgs line.cap {
+  stroke: #111827;
+  stroke-width: 2px;
+}
+
+.zone-avgs text.avg-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: #111827;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+}
+
+.ctrl {
+  display:inline-flex; align-items:center; gap:.5rem;
+  margin-right: 1rem;
+}
+svg#chart { /* Sicherheitsnetz gegen Clipping von Labels */
+  overflow: visible;
+}
+
+/* === Panel & Listen: einheitlich, zuverlässig scrollbar (final) === */
+
+/* Eltern im Grid dürfen schrumpfen → Scroll funktioniert */
+.wrap { min-height: 0; }
+.wrap > .panel { min-height: 0; }
+
+/* Panel als Spalte, feste Bezugshöhe, nur die Listen scrollen */
+.panel {
+  padding: 14px 16px;                /* deine bestehenden Abstände behalten */
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+
+  display: flex;                     /* WICHTIG: kein grid mehr */
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;                  /* nur die inneren Listen scrollen */
+}
+
+/* Basis: Kinder wachsen nicht (Listen überschreiben das gleich) */
+.panel > * { flex: 0 0 auto; }
+
+/* Beide Listen nutzen Restplatz & scrollen darin */
+#plist,
+#zonesList {
+  flex: 1 1 0;
+  min-height: 0;                     /* Pflicht für Scroll in Flex/Grid */
+  overflow: auto;
+
+  display: flex;                     /* Einträge untereinander */
+  flex-direction: column;
+  gap: 10px;                         /* Abstände zwischen Einträgen */
+
+  padding-right: 4px;
+  padding-bottom: 12px;              /* verhindert „letztes Item abgeschnitten“ */
+  box-sizing: border-box;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* End‑Spacer: garantiert, dass das letzte Element komplett sichtbar wird */
+#plist::after,
+#zonesList::after {
+  content: "";
+  display: block;
+  height: 12px;                      /* an gap/Design anpassen */
+  flex: 0 0 12px;
+}
+
+/* Einträge in beiden Listen: keine Außenmargen, gap regelt Abstände */
+#plist > *,
+#zonesList > * { margin: 0; }
+
+/* Überschriften im Panel nicht sticky (frisst sonst Scrollhöhe) */
+.panel h3 { position: static; }
+
+/* === Zonenliste im Stil der Punktliste ========================= */
+
+/* Zonen-Einträge: wie .pitem (eine Reihe, Box) */
+#zonesList > *,
+#zonesList .zitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02) inset;
+  color: var(--ink);
+  font-size: 14px;                   /* wie .pitem .pvals */
+  line-height: 1.35;
+  min-width: 0;                      /* verhindert Text-Überlauf in Flex */
+}
+
+/* Badge (#Nr) exakt wie .pitem .pid */
+#zonesList .zid,
+#zonesList b:first-child {
+  display: inline-block;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 12px;                   /* gleiche Größe wie bei den Punkten */
+  line-height: 1.2;
+}
+/* kein zusätzliches '#' per CSS – kommt schon aus dem JS */
+#zonesList .zid::before,
+#zonesList b:first-child::before { content: none; }
+
+/* Zeiten & Breite kompakt in einer Reihe */
+#zonesList .ztimes { white-space: nowrap; word-spacing: -2px; }
+#zonesList .zwidth { white-space: nowrap; }
+
+/* Optionale Meta-Spalte rechts (falls vorhanden) */
+#zonesList .meta,
+#zonesList .range {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Status analog .pitem.locked */
+#zonesList .locked,
+#zonesList .active {
+  border-color: #f59e0b;
+  background: #fff7ed;
+}
+
+
+#zonesList .scroll-spacer { height: 56px; }
+
+.heat-label {
+  position: absolute;
+  top: 0%;
+  left: 46.5%;
+  font-weight: 700;
+  font-size: 20px;
+  transform: translate(-50%, -50%);
+  padding: 6px 10px;
+  color: #000000;
+  border-radius: 8px;
+  z-index: 10;            /* above chart marks/tool layers in the same root */
+  pointer-events: none;   /* don’t block pan/zoom/drag */
+  user-select: none;
+ }
+ 
+ #app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* #app ist schon flex-column, siehe oben */
+
+#app > #graph-air,
+#app > #graph-top,
+#app > #graph-bottom {
+  min-height: 0;   /* wichtig, damit sie schrumpfen dürfen */
+}
+
+/* Air kleiner */
+#graph-air {
+  flex: 0 0 25%;   /* 25% der Höhe von #app */
+}
+
+/* Top & Bottom teilen sich den Rest */
+#graph-top,
+#graph-bottom {
+  flex: 1 1 0;     /* Rest gleichmäßig aufteilen */
+}
+
+
+/* Der Container für den Tooltip */
+.zone-tooltip {
+  position: absolute;       /* Wichtig: Schwebt über allem */
+  top: 0;
+  left: 0;
+  background: white;        /* Wichtig: Sonst ist es transparent */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;     /* SEHR WICHTIG: Maus klickt "durch" den Tooltip */
+  z-index: 10000;            /* Ganz oben */
+  opacity: 0;               /* Startzustand */
+  transition: opacity 0.1s;
+  font-family: sans-serif;
+  font-size: 12px;
+  color: #333;
+  max-width: none;
+  pointer-events: auto !important; /* WICHTIG: Damit die Maus den Tooltip "greifen" kann */
+  padding: 0;
+}
+
+/* Der äußere Rahmen (das sichtbare Fenster) */
+.tooltip-chart-window {
+  width: 500px;  
+  height: 300px;
+  overflow-x: auto;   /* Scrollbalken unten anzeigen */
+  overflow-y: hidden;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  position: relative;
+  /* Scrollbalken schöner machen (optional für Webkit) */
+  scrollbar-width: thin; 
+}
+
+/* Der innere Container, der den eigentlichen breiten Graphen hält */
+.tooltip-chart-content {
+  height: 100%;
+  /* Breite wird per JS gesetzt, z.B. 1500px */
+}
+
+.tooltip-header-area {
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-bottom: 1px solid #eee;
+}
+
+/* Der Container für den Chart im Tooltip */
+.tooltip-chart {
+  /* ChartShell braucht explizite Größe */
+  width: 500px;  
+  height: 300px; 
+  
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Optional: Header Styling */
+.tooltip-header strong {
+  font-size: 14px;
+  color: #000;
+}
+.tooltip-body .row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
