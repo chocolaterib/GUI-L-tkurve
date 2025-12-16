@@ -1,0 +1,425 @@
+@font-face {
+  font-family: myFont;
+  src: url("/masks/bootstrap/fonts/Montserrat.ttf") format("truetype");
+}
+body, button, input, select, textarea, h1, h2, h3, h4, h5, h6 {
+  font-family: myFont, sans-serif;
+}
+
+:root {
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --ink: #111827;
+  --muted: #4b5563;
+  --accent: #2563eb;
+  --accent2: #b45309;
+  --grid: #e5e7eb;
+  --curve: #0ea5e9;
+  --above: #10b981;
+  --danger: #ef4444;
+  --border: #e5e7eb;
+  --shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+
+/* --- Layout & Header --- */
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Verhindert, dass der ganze Body scrollt */
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0; /* Header darf nicht schrumpfen */
+}
+
+header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: .3px;
+  color: var(--ink);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.toolbar label {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: 1rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.toolbar-spacer {
+  padding: 8px 16px;
+}
+
+/* --- Controls & Inputs --- */
+
+input[type="range"] {
+  accent-color: black;
+  width: 200px;
+  height: 40px;
+  font-size: 1px;
+  font-weight: 500;
+  position: relative;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border: 1px solid;
+  accent-color: black;
+}
+
+/* Button und Dropdown */
+#selectZoneButton {
+  background-color: #f9fafb;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background 0.2s, border-color 0.2s;
+  margin-left: 1rem;
+}
+
+#selectZoneButton:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+#zoneSelectionDropdown {
+  display: none; 
+  position: absolute;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 5px; 
+}
+
+#zoneSelectionDropdown.show {
+  display: block !important;
+}
+
+.zone-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.zone-dropdown-item:hover {
+  background-color: #f3f4f6;
+  color: var(--accent);
+}
+
+.zone-dropdown-item.active {
+  background-color: #eff6ff;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.ctrl {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin-right: 1rem;
+}
+
+
+/* --- SVG & Charts Allgemein --- */
+
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+
+.grid line { stroke: var(--grid); stroke-width: 1; }
+.axis text { fill: #111827; font-size: 11.5px; }
+.axis path, .axis line { stroke: #0c0c0c; }
+
+.liquidus line { stroke: #f59e0b; stroke-dasharray: 6 6; stroke-width: 1.5; }
+.liquidus text { fill: var(--accent2); font-size: 12px; }
+
+.curve { fill: none; stroke: var(--curve); stroke-width: 2.5; }
+.above { fill: rgba(16,185,129,.12); stroke: none; }
+
+.zones .zone-even rect { fill: #a8dadc; }
+.zones .zone-odd  rect { fill: #457b9d; }
+.zones .zone rect { fill-opacity: 0.3; shape-rendering: crispEdges; }
+
+.point { cursor: grab; }
+.point circle { fill: #ffffff; stroke: #2563eb; stroke-width: 2; }
+.point.locked circle { stroke: #f59e0b; }
+.point .ring { fill: none; stroke: rgba(0,0,0,.15); stroke-width: 6; opacity: 0; }
+.point:hover .ring { opacity: 1; }
+
+.crosshair line { stroke: #9ca3af; stroke-dasharray: 4 6; }
+.ptlabel {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink);
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+.heat-label {
+  position: absolute;
+  top: 0%;
+  left: 46.5%;
+  font-weight: 700;
+  font-size: 20px;
+  transform: translate(-50%, -50%);
+  padding: 6px 10px;
+  color: #000000;
+  border-radius: 8px;
+  z-index: 10;
+  pointer-events: none;
+  user-select: none;
+}
+
+.zone-edges .edge { stroke: black; stroke-width: 1px; opacity: 0.60; }
+.zone-edges .edge-cap { fill: #111827; }
+.zonelabel { fill: #111827; font-size: 11.5px; }
+.zone-times text { fill: #111827; font-size: 11.5px; }
+.zone-times .tick { stroke: var(--ink); stroke-width: 1; }
+
+.zone-avgs line.avg { stroke: #111827; stroke-width: 2px; opacity: 0.9; }
+.zone-avgs line.cap { stroke: #111827; stroke-width: 2px; }
+.zone-avgs text.avg-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: #111827;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+}
+
+svg#chart { overflow: visible; }
+
+
+/* --- Multi-View & Single-View Layouts --- */
+
+/* 1. Multi-View Container (Alle Zonen) */
+#multi-view-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.mv-column {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  min-width: 100%;
+  flex: 0 0 100%;
+  height: 100%;
+  padding: 0 16px 16px 16px;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+}
+
+.mv-column.history {
+  background-color: #f9fafb;
+}
+
+
+/* 2. Detail View (Single Zone) Container */
+#zoneDetailView {
+  width: 100%;
+  height: 100%;
+  display: none; 
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  box-sizing: border-box;
+  background-color: var(--panel);
+}
+
+/* Single Zone: Scroll-Container für Graphen */
+/* ÄNDERUNG: flex: 1 statt height: 400px, damit er die Seite füllt */
+.single-zone-scroll-view {
+  display: flex !important;
+  flex-direction: row;
+  flex: 1;               /* Nimmt den gesamten verfügbaren Platz ein */
+  height: auto;          /* Keine feste Höhe mehr */
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  margin-bottom: 12px;   /* Etwas Abstand zur Liste unten */
+  gap: 0 !important;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+/* Spalten im Detail-View Scroll */
+.sv-column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 100%;
+  min-width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  border-right: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  background-color: #fff;
+}
+
+.sv-column.history {
+  background-color: #f9fafb;
+}
+
+.sv-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Graph Container innerhalb der Spalten */
+.graph-root {
+  position: relative;
+  min-height: 0;
+  flex: 1; /* Füllt den Restplatz vertikal */
+  width: 100%;
+}
+
+.graph-root.bottom {
+  border-top: 1px solid #eee;
+}
+
+/* --- Listen & Panel (Detail View) --- */
+
+/* ÄNDERUNG: Feste Höhe für die Liste, damit die Graphen dominieren */
+#zonePlist {
+  flex: 0 0 200px;       /* Liste ist unten fixiert auf ca 200px Höhe */
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* Punkt-Listen Styling */
+.foot { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.pitem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02) inset;
+}
+.pitem .pid {
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+.pitem .pvals { font-size: 16px; color: var(--ink); }
+.pitem.locked { border-color: #f59e0b; background: #fff7ed; }
+
+/* --- Tooltips --- */
+
+.zone-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.1s;
+  font-family: sans-serif;
+  font-size: 12px;
+  color: #333;
+  pointer-events: auto !important;
+}
+
+.tooltip-chart-window {
+  width: 500px;  
+  height: 300px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  position: relative;
+  scrollbar-width: thin; 
+}
+
+.tooltip-header-area {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #eee;
+}
+
+.tooltip-chart {
+  width: 500px;  
+  height: 300px; 
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tooltip-header strong { font-size: 14px; color: #000; }
+.tooltip-body .row { display: flex; justify-content: space-between; margin-bottom: 2px; }
