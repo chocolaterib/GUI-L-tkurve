@@ -1,0 +1,362 @@
+import { createReflowGraph } from './ReflowCurve/app/ReflowGraph.js';
+import { createStepSeries, generateRandomStepLevels, generateSegmentedIst} from './utils/simulationData.js'
+
+export function initReflowGraph(options = {}) {
+  const appRoot = document.getElementById('app');
+  const zoneDetailView = document.getElementById('zoneDetailView');
+  const zoneGraphOber = document.getElementById('zoneGraphOber');
+  const zoneGraphUnter = document.getElementById('zoneGraphUnter');
+  const currentZoneName = document.getElementById('currentZoneName');
+  const currentZoneName2 = document.getElementById('currentZoneName2');
+  const zonePlist = document.getElementById('zonePlist');
+
+  // ---------- KONFIGURATION ----------
+  const totalTime = 300;
+  const maxTemp = 300;
+  const zonesCount = 12; 
+  const zoneDuration = totalTime / zonesCount;
+
+  // Globale Referenzen
+  let allApps = [];
+  let currentZoneIndex = -1; // -1 = Alle Zonen
+
+  // Feste Profile für "Aktuell"
+  const levelsTopDefault = [50, 100, 130, 150, 160, 170, 180, 200, 230, 245, 150, 100];
+  const levelsBottomDefault = [40, 90, 120, 140, 150, 160, 170, 190, 220, 230, 140, 90];
+
+  // 1. Zonen Definition (Global)
+  const precalculatedZones = [];
+  for(let z=0; z<zonesCount; z++) {
+      precalculatedZones.push({ 
+        id: z + 1, 
+        tStart: z * zoneDuration, 
+        tEnd: (z + 1) * zoneDuration, 
+        meanValue: null 
+      });
+  }
+
+  // ---------- CONTAINER SETUP ----------
+  // Multi-View Container (wird in renderMultiView eingehängt)
+  const multiViewContainer = document.createElement('div');
+  multiViewContainer.id = 'multi-view-container';
+  // Styling ist nun größtenteils im CSS (#multi-view-container), hier nur Basics:
+  multiViewContainer.style.display = 'flex';
+  multiViewContainer.style.flexDirection = 'row';
+  multiViewContainer.style.scrollSnapType = 'x mandatory';
+  multiViewContainer.style.scrollBehavior = 'smooth';
+
+  multiViewContainer.addEventListener('wheel', (evt) => {
+    if (evt.deltaY !== 0) {
+      evt.preventDefault();
+      multiViewContainer.scrollLeft += evt.deltaY;
+    }
+  }, { passive: false });
+
+
+  // ---------- RENDER LOGIK ----------
+  
+  function renderGraphs(targetZoneIndex = -1) {
+    allApps = [];
+    
+    // UI Umschaltung
+    if (targetZoneIndex === -1) {
+      // --> ALLE ZONEN
+      appRoot.style.display = 'flex'; // Wichtig: Flex damit der Container füllt
+      zoneDetailView.style.display = 'none';
+      
+      appRoot.innerHTML = '';
+      // Toolbar/Controls Placeholder (optional)
+      const toolbar = document.createElement('div');
+      toolbar.style.padding = '8px 16px';
+      appRoot.appendChild(toolbar);
+      
+      appRoot.appendChild(multiViewContainer);
+      multiViewContainer.innerHTML = '';
+      
+      renderMultiView();
+      
+    } else {
+      // --> EINZELNE ZONE
+      appRoot.style.display = 'none';
+      zoneDetailView.style.display = 'flex'; // Wichtig: Flex für Layout
+      
+      zoneGraphOber.innerHTML = '';
+      zoneGraphUnter.innerHTML = '';
+      
+      renderSingleZoneView(targetZoneIndex);
+      updateZonePlist(targetZoneIndex);
+      
+      const zoneNumber = targetZoneIndex + 1;
+      currentZoneName.textContent = zoneNumber;
+      currentZoneName2.textContent = zoneNumber;
+    }
+
+    // Controls neu initialisieren (optional, falls benötigt)
+    // setupControls(); 
+  }
+
+  // 1. ANSICHT: ALLE ZONEN (Scrollbar Historie)
+  function renderMultiView() {
+    const numberOfColumns = 4; // 1 Aktuell + 3 Historie
+    
+    for (let i = 0; i < numberOfColumns; i++) {
+      const isHistory = i > 0;
+      
+      const columnWrapper = document.createElement('div');
+      columnWrapper.style.display = 'grid';
+      columnWrapper.style.gridTemplateRows = '1fr 1fr'; // Beide Graphen gleich hoch
+      columnWrapper.style.minWidth = '100%'; // Volle Breite pro Spalte
+      columnWrapper.style.flex = '0 0 100%'; // Kein Schrumpfen -> Scrollbar erzwingen
+      columnWrapper.style.height = '100%';
+      columnWrapper.style.padding = '0 16px 16px 16px';
+      columnWrapper.style.boxSizing = 'border-box';
+      columnWrapper.style.scrollSnapAlign = 'start';
+      if (isHistory) columnWrapper.style.backgroundColor = '#f9fafb';
+
+      multiViewContainer.appendChild(columnWrapper);
+
+      const graphRootTop = document.createElement('div');
+      graphRootTop.style.position = 'relative'; 
+      graphRootTop.style.minHeight = '0'; // Flex-Fix
+
+      const graphRootBottom = document.createElement('div');
+      graphRootBottom.style.position = 'relative';
+      graphRootBottom.style.minHeight = '0';
+
+      columnWrapper.appendChild(graphRootTop);
+      columnWrapper.appendChild(graphRootBottom);
+
+      const suffix = isHistory ? ` (Historie -${i})` : " (Aktuell)";
+
+      let levelsTop, levelsBottom, coverage;
+      if (isHistory) {
+        levelsTop = generateRandomStepLevels(zonesCount);
+        levelsBottom = generateRandomStepLevels(zonesCount);
+        coverage = 1.0; 
+      } else {
+        levelsTop = levelsTopDefault;
+        levelsBottom = levelsBottomDefault;
+        coverage = 0.5;
+      }
+
+      // Globale Zeit (0 bis 300s)
+      const seriesTop = createStepSeries(levelsTop,0,zoneDuration);
+      const seriesBottom = createStepSeries(levelsBottom,0,zoneDuration);
+      const istDataTop = generateSegmentedIst(levelsTop, coverage, 0,zoneDuration);
+      const istDataBottom = generateSegmentedIst(levelsBottom, coverage,0,zoneDuration);
+
+      const commonOptions = {
+        zoneCount: zonesCount,
+        isHistory: isHistory,
+        totalTime: totalTime,
+        maxTemp: maxTemp,
+        zones: JSON.parse(JSON.stringify(precalculatedZones)),
+      };
+
+      const appTop = createReflowGraph(graphRootTop, {
+        ...commonOptions,
+        series: seriesTop,
+        istGraph: istDataTop,
+        name: `Oberhitze${suffix}`,
+      });
+
+      const appBottom = createReflowGraph(graphRootBottom, {
+        ...commonOptions,
+        series: seriesBottom,
+        istGraph: istDataBottom,
+        name: `Unterhitze${suffix}`,
+      });
+
+      allApps.push(appTop, appBottom);
+    }
+  }
+
+// 2. ANSICHT: EINZELNE ZONE (Mit erzwungenen Warnungen/Fehlern für Demo)
+  function renderSingleZoneView(zoneIndex) {
+    const zoneNumber = zoneIndex + 1;
+    const container = document.getElementById('zoneGraphsContainer');
+    
+    // Ampel-Konfiguration
+    const WARNING_THRESHOLD = 10; // Gelb ab 10°C
+    const ERROR_THRESHOLD = 20;   // Rot ab 20°C
+
+    // 1. Layout Reset
+    container.innerHTML = ''; 
+    container.style.display = 'flex';
+    container.style.flexDirection = 'row';
+    container.style.height = 'auto'; 
+    container.style.flex = '1';      
+    container.style.minHeight = '0'; 
+    container.style.overflowX = 'auto';
+    container.style.overflowY = 'hidden';
+    container.style.scrollSnapType = 'x mandatory';
+    container.style.scrollBehavior = 'smooth';
+    
+    container.onwheel = (evt) => {
+        if (evt.deltaY !== 0) {
+            evt.preventDefault();
+            container.scrollLeft += evt.deltaY;
+        }
+    };
+
+    const numberOfColumns = 4; 
+
+    for (let i = 0; i < numberOfColumns; i++) {
+        const isHistory = i > 0;
+        
+        // --- DATEN ERZEUGUNG ---
+        let levelTop, levelBottom, coverage;
+        
+        if (isHistory) {
+            levelTop = Math.floor(Math.random() * (240 - 100) + 100);
+            levelBottom = Math.floor(Math.random() * (240 - 100) + 100);
+            coverage = 1.0;
+        } else {
+            levelTop = levelsTopDefault[zoneIndex];
+            levelBottom = levelsBottomDefault[zoneIndex];
+            coverage = 0.5; 
+        }
+
+        const singleLevelTop = [levelTop];
+        const singleLevelBottom = [levelBottom];
+
+        const seriesTop = createStepSeries(singleLevelTop, 0, zoneDuration); 
+        const seriesBottom = createStepSeries(singleLevelBottom, 0, zoneDuration);
+        
+        const istDataTop = generateSegmentedIst(singleLevelTop, coverage, 0, zoneDuration);
+        const istDataBottom = generateSegmentedIst(singleLevelBottom, coverage, 0, zoneDuration);
+
+        // --- UI RENDERING ---
+        const colWrapper = document.createElement('div');
+        colWrapper.style.display = 'flex';
+        colWrapper.style.flexDirection = 'column';
+        colWrapper.style.flex = '0 0 100%';       
+        colWrapper.style.minWidth = '100%';       
+        colWrapper.style.height = '100%'; 
+        colWrapper.style.scrollSnapAlign = 'start';
+        colWrapper.style.borderRight = '1px solid #e5e7eb';
+        colWrapper.style.backgroundColor = isHistory ? '#f9fafb' : '#fff';
+        colWrapper.style.boxSizing = 'border-box';
+        
+        // Header
+        const header = document.createElement('div');
+        header.style.padding = '12px 16px';
+        header.style.fontSize = '14px';
+        header.style.fontWeight = 'bold';
+        header.style.borderBottom = '1px solid #eee';
+        header.style.color = '#333';
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between'; 
+        header.style.alignItems = 'center';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = isHistory ? `Historie -${i} (Zone ${zoneNumber})` : `Aktuell (Zone ${zoneNumber})`;
+
+        header.appendChild(titleSpan);
+        colWrapper.appendChild(header);
+
+        // Graphen-Container
+        const divTop = document.createElement('div');
+        divTop.style.flex = '1'; 
+        divTop.style.position = 'relative';
+        divTop.style.minHeight = '0'; 
+
+        const divBot = document.createElement('div');
+        divBot.style.flex = '1';
+        divBot.style.position = 'relative';
+        divBot.style.minHeight = '0';
+        divBot.style.borderTop = '1px solid #eee'; 
+
+        colWrapper.appendChild(divTop);
+        colWrapper.appendChild(divBot);
+        container.appendChild(colWrapper);
+
+        const singleZoneDef = [{
+            id: zoneNumber,
+            tStart: 0,
+            tEnd: zoneDuration,
+            meanValue: null
+        }];
+
+        const commonOptions = {
+            zoneCount: 1, 
+            isHistory: isHistory,
+            totalTime: zoneDuration, 
+            maxTemp: maxTemp,
+            zones: singleZoneDef
+        };
+
+        const appOber = createReflowGraph(divTop, {
+            ...commonOptions,
+            series: seriesTop,
+            istGraph: istDataTop,
+            name: `Oberhitze`, 
+        });
+
+        const appUnter = createReflowGraph(divBot, {
+            ...commonOptions,
+            series: seriesBottom,
+            istGraph: istDataBottom,
+            name: `Unterhitze`,
+        });
+        
+        allApps.push(appOber, appUnter);
+    }
+  }
+  // ---------- DROPDOWN (Unverändert wichtig) ----------
+  function setupZoneDropdown() {
+    const btn = document.getElementById('selectZoneButton');
+    const dropdown = document.getElementById('zoneSelectionDropdown');
+
+    if (!btn || !dropdown) return;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); 
+      dropdown.classList.toggle('show');
+    });
+
+    window.addEventListener('click', () => {
+      dropdown.classList.remove('show');
+    });
+
+    dropdown.innerHTML = '';
+    
+    // "Alle Zonen" Option
+    const itemAll = document.createElement('button');
+    itemAll.className = 'zone-dropdown-item active'; 
+    itemAll.innerText = 'Alle Zonen (Gesamtübersicht)';
+    itemAll.onclick = () => {
+      dropdown.classList.remove('show');
+      selectZone(-1, itemAll);
+    };
+    dropdown.appendChild(itemAll);
+
+    // Einzelne Zonen
+    for (let i = 0; i < zonesCount; i++) {
+      const item = document.createElement('button');
+      item.className = 'zone-dropdown-item';
+      item.innerText = `Zone ${i + 1}`;
+      item.onclick = () => {
+        dropdown.classList.remove('show');
+        selectZone(i, item);
+      };
+      dropdown.appendChild(item);
+    }
+
+    function selectZone(index, clickedBtn) {
+      currentZoneIndex = index;
+      if (index === -1) btn.innerText = "Alle Zonen";
+      else btn.innerText = `Zone ${index + 1}`;
+
+      const allItems = dropdown.querySelectorAll('.zone-dropdown-item');
+      allItems.forEach(el => el.classList.remove('active'));
+      clickedBtn.classList.add('active');
+
+      renderGraphs(index);
+    }
+  }
+
+  // Start
+  setupZoneDropdown();
+  renderGraphs(-1);
+}
